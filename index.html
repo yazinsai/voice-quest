@@ -3,295 +3,830 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voice Gender Detection</title>
+<title>VOICE QUEST</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg: #3b2a1a;
+    --bg-dark: #2a1d10;
+    --panel: #c4a46a;
+    --panel-light: #d4b87a;
+    --panel-dark: #a88a50;
+    --panel-shadow: #8a6e3a;
+    --border: #5a3e20;
+    --border-dark: #3e2a14;
+    --gold: #d4a020;
+    --gold-dark: #a07818;
+    --gold-light: #e8c040;
+    --text: #3b2a1a;
+    --text-dim: #7a6040;
+    --blue: #4a6a8a;
+    --blue-light: #6a9abe;
+    --blue-dark: #3a5470;
+    --pink: #b05a6a;
+    --pink-light: #d07a8a;
+    --pink-dark: #8a3a4a;
+    --green: #5a8a3a;
+    --red: #a04030;
+    --pixel: 'Press Start 2P', monospace;
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #0a0a0a;
-    color: #e0e0e0;
+    font-family: var(--pixel);
+    background: var(--bg);
+    color: var(--text);
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 24px;
+    padding: 20px 16px;
+    image-rendering: pixelated;
   }
-  h1 {
-    font-size: 1.4rem;
-    font-weight: 500;
-    margin-bottom: 8px;
-    color: #fff;
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.06;
+    background-image: url("data:image/svg+xml,%3Csvg width='4' height='4' viewBox='0 0 4 4' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0' y='0' width='2' height='2' fill='%23000'/%3E%3Crect x='2' y='2' width='2' height='2' fill='%23000'/%3E%3C/svg%3E");
+    background-size: 4px 4px;
+    pointer-events: none;
   }
-  .subtitle {
-    font-size: 0.85rem;
-    color: #888;
-    margin-bottom: 40px;
+  .game-container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  /* Main panel */
+  .main-panel {
+    background: var(--panel);
+    border: 4px solid var(--border);
+    box-shadow:
+      inset 0 0 0 2px var(--panel-light),
+      0 6px 0 var(--border-dark),
+      0 8px 20px rgba(0,0,0,0.5);
+  }
+  .panel-bar {
+    background: var(--border);
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .panel-bar-title { font-size: 0.55rem; color: var(--panel); letter-spacing: 1px; }
+  .panel-bar-close { font-size: 0.55rem; color: var(--panel-dark); }
+  .panel-body { padding: 24px 20px 20px; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 16px; }
+  .header h1 { font-size: 1rem; color: var(--text); letter-spacing: 2px; margin-bottom: 6px; }
+  .header .sub { font-size: 0.45rem; color: var(--text-dim); letter-spacing: 1px; }
+
+  /* Dot divider */
+  .dot-divider { display: flex; justify-content: center; gap: 4px; margin: 14px 0; }
+  .dot-divider span { width: 6px; height: 6px; background: var(--gold); display: block; }
+
+  /* Pixel art SVGs */
+  .pixel-art-container {
+    display: flex;
+    justify-content: center;
+    margin: 12px 0 16px;
+  }
+  .pixel-art-container svg {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* Pixel wave bars */
+  .pixel-waves {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 3px;
+    height: 28px;
+    margin: 6px 0 14px;
+  }
+  .pixel-wave-bar {
+    width: 6px;
+    background: var(--gold);
+    transition: height 0.1s;
+  }
+
+  /* Record */
+  .record-label {
+    font-size: 0.45rem;
+    color: var(--text);
+    text-align: center;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+  .record-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
   #record-btn {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    border: 3px solid #333;
-    background: #1a1a1a;
-    color: #ccc;
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  #record-btn:hover { border-color: #555; background: #222; }
-  #record-btn.recording {
-    border-color: #e53935;
-    background: #2a1010;
-    color: #e53935;
-    animation: pulse 1.5s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.3); }
-    50% { box-shadow: 0 0 0 16px rgba(229,57,53,0); }
-  }
-  #record-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  #timer {
-    margin-top: 16px;
-    font-size: 1.1rem;
-    font-variant-numeric: tabular-nums;
-    color: #666;
-    height: 24px;
-  }
-  #timer.active { color: #e53935; }
-
-  #result {
-    margin-top: 40px;
     width: 100%;
-    max-width: 360px;
-    display: none;
-  }
-  .result-card {
-    background: #141414;
-    border: 1px solid #222;
-    border-radius: 12px;
-    padding: 24px;
-  }
-  .gender-label {
-    font-size: 1.6rem;
-    font-weight: 600;
-    text-align: center;
-    margin-bottom: 4px;
-  }
-  .confidence {
-    text-align: center;
-    font-size: 0.8rem;
-    color: #888;
-    margin-bottom: 20px;
-  }
-  .prob-bar {
-    display: flex;
-    height: 32px;
-    border-radius: 6px;
-    overflow: hidden;
-    margin-bottom: 20px;
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
-  .prob-male {
-    background: #1565c0;
+    padding: 14px 20px;
+    background: var(--gold);
+    border: 3px solid var(--gold-dark);
+    box-shadow: inset 0 -3px 0 var(--gold-dark), inset 0 2px 0 var(--gold-light), 0 4px 0 var(--border-dark);
+    font-family: var(--pixel);
+    font-size: 0.55rem;
+    color: var(--text);
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.1s;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
-    transition: width 0.5s;
-  }
-  .prob-female {
-    background: #ad1457;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    transition: width 0.5s;
-  }
-  .stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
     gap: 8px;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
-  .stat {
-    background: #1a1a1a;
-    border-radius: 8px;
-    padding: 10px 12px;
+  #record-btn:hover { background: var(--gold-light); }
+  #record-btn:active {
+    box-shadow: inset 0 2px 0 var(--gold-dark), 0 1px 0 var(--border-dark);
+    transform: translateY(3px);
   }
-  .stat-label {
-    font-size: 0.7rem;
-    color: #666;
-    text-transform: uppercase;
+  #record-btn.recording {
+    background: var(--red);
+    border-color: #7a2820;
+    box-shadow: inset 0 -3px 0 #7a2820, inset 0 2px 0 #c05040, 0 4px 0 var(--border-dark);
+    color: #fdd;
+  }
+  #record-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* Progress bar */
+  .progress-wrapper { width: 100%; margin-top: 8px; display: none; }
+  .progress-wrapper.active { display: block; }
+  .progress-track {
+    height: 12px;
+    background: var(--panel-dark);
+    border: 2px solid var(--border);
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+  .progress-segs {
+    position: absolute;
+    inset: 0;
+    display: flex;
+  }
+  .progress-segs div {
+    flex: 1;
+    border-right: 2px solid var(--panel-dark);
+  }
+  .progress-segs div:last-child { border: none; }
+
+  /* Timer */
+  .timer-row { margin-top: 8px; text-align: center; min-height: 18px; }
+  #timer { font-size: 0.45rem; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  #timer.active { color: var(--red); }
+
+  /* Status */
+  #status {
+    margin-top: 8px;
+    font-size: 0.4rem;
+    color: var(--text-dim);
+    text-align: center;
+    min-height: 14px;
     letter-spacing: 0.5px;
   }
-  .stat-value {
-    font-size: 1.1rem;
-    font-weight: 500;
-    margin-top: 2px;
-  }
-  .error-msg {
-    background: #2a1010;
-    border: 1px solid #3a1515;
-    border-radius: 8px;
-    padding: 16px;
-    color: #e57373;
+  @keyframes blink { 0%,49%{opacity:1}50%,100%{opacity:0} }
+  #status.analyzing { color: var(--text); animation: blink 0.6s step-end infinite; }
+
+  /* Footer */
+  .panel-footer {
+    font-size: 0.35rem;
+    color: var(--text-dim);
     text-align: center;
-    font-size: 0.9rem;
+    margin-top: 8px;
+    letter-spacing: 0.5px;
   }
-  #status {
+  .page-footer {
+    margin-top: 14px;
+    font-size: 0.3rem;
+    color: var(--panel-shadow);
+    text-align: center;
+    letter-spacing: 1px;
+  }
+
+  /* ===== RESULTS ===== */
+  #result { width: 100%; display: none; margin-top: 14px; }
+  @keyframes drop-in {
+    0% { opacity: 0; transform: translateY(-20px); }
+    60% { transform: translateY(4px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes bob {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  .result-anim { animation: drop-in 0.4s ease-out forwards; }
+
+  .char-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .char-sprite {
+    margin-bottom: 8px;
+  }
+  .char-sprite svg { animation: bob 1.5s ease-in-out infinite; }
+  .char-name {
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+  .char-name.male { color: var(--blue); }
+  .char-name.female { color: var(--pink); }
+  .char-title {
+    font-size: 0.4rem;
+    color: var(--gold-dark);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .char-quip {
+    font-size: 0.35rem;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 1.8;
+    max-width: 260px;
+    margin: 0 auto;
+  }
+
+  /* Battle bar */
+  .battle-section {
+    margin: 12px 0;
+    padding: 12px 0;
+    border-top: 3px solid var(--panel-dark);
+    border-bottom: 3px solid var(--panel-dark);
+  }
+  .battle-heads {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .battle-side { display: flex; align-items: center; gap: 6px; }
+  .battle-dot { width: 8px; height: 8px; }
+  .battle-dot.m { background: var(--blue); }
+  .battle-dot.f { background: var(--pink); }
+  .battle-tag { font-size: 0.35rem; letter-spacing: 1px; }
+  .battle-tag.m { color: var(--blue); }
+  .battle-tag.f { color: var(--pink); }
+  .battle-track {
+    height: 16px;
+    background: var(--panel-dark);
+    border: 2px solid var(--border);
+    display: flex;
+    overflow: hidden;
+  }
+  .battle-fill-m {
+    background: var(--blue);
+    transition: width 0.6s ease-out;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .battle-fill-f {
+    background: var(--pink);
+    transition: width 0.6s ease-out;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .battle-pct {
+    font-size: 0.3rem;
+    color: #fff;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
+  }
+
+  /* Stats */
+  .stats-title {
+    font-size: 0.4rem;
+    color: var(--text);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    margin-top: 12px;
+  }
+  .stat-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 2px dotted var(--panel-dark);
+  }
+  .stat-line:last-child { border-bottom: none; }
+  .stat-k { font-size: 0.35rem; color: var(--text-dim); letter-spacing: 0.5px; }
+  .stat-v { font-size: 0.4rem; color: var(--text); font-variant-numeric: tabular-nums; }
+  .stat-v.high { color: var(--green); }
+  .stat-v.low { color: var(--gold-dark); }
+
+  /* Share */
+  .share-area {
     margin-top: 16px;
-    font-size: 0.8rem;
-    color: #666;
-    height: 20px;
+    padding-top: 12px;
+    border-top: 3px solid var(--panel-dark);
+    text-align: center;
   }
+  .share-label {
+    font-size: 0.35rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .share-btns { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+  .share-btn {
+    font-family: var(--pixel);
+    font-size: 0.35rem;
+    padding: 8px 12px;
+    background: var(--panel-dark);
+    border: 2px solid var(--border);
+    box-shadow: 0 2px 0 var(--border-dark);
+    color: var(--text);
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.1s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .share-btn:hover { background: var(--gold); border-color: var(--gold-dark); }
+  .share-btn:active { transform: translateY(2px); box-shadow: none; }
+
+  /* Error */
+  .error-box { text-align: center; padding: 16px; }
+  .error-box .err-text { font-size: 0.4rem; color: var(--red); line-height: 1.8; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    font-family: var(--pixel);
+    font-size: 0.35rem;
+    background: var(--green);
+    color: #fff;
+    padding: 10px 16px;
+    border: 2px solid #3a6a1a;
+    box-shadow: 0 3px 0 #2a4a10;
+    opacity: 0;
+    transition: all 0.2s;
+    z-index: 200;
+    letter-spacing: 0.5px;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
+<div class="game-container">
+  <div class="main-panel">
+    <div class="panel-bar">
+      <span class="panel-bar-title">VOICE QUEST</span>
+      <span class="panel-bar-close">[X]</span>
+    </div>
+    <div class="panel-body">
+      <div class="header">
+        <h1>VOICE CHECK</h1>
+        <div class="sub">SPEAK AND DISCOVER YOUR PITCH</div>
+      </div>
+      <div class="dot-divider">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span>
+      </div>
 
-<h1>Voice Gender Detection</h1>
-<p class="subtitle">F0 pitch analysis via Praat</p>
+      <!-- Pixel mic SVG -->
+      <div class="pixel-art-container">
+        <svg width="72" height="88" viewBox="0 0 12 15" shape-rendering="crispEdges">
+          <!-- sound waves left -->
+          <rect x="0" y="2" width="1" height="1" fill="#d4a020"/>
+          <rect x="0" y="4" width="1" height="1" fill="#d4a020"/>
+          <rect x="1" y="3" width="1" height="1" fill="#d4a020"/>
+          <!-- sound waves right -->
+          <rect x="11" y="2" width="1" height="1" fill="#d4a020"/>
+          <rect x="11" y="4" width="1" height="1" fill="#d4a020"/>
+          <rect x="10" y="3" width="1" height="1" fill="#d4a020"/>
+          <!-- mic head -->
+          <rect x="4" y="0" width="4" height="1" fill="#5a3e20"/>
+          <rect x="3" y="1" width="1" height="1" fill="#5a3e20"/>
+          <rect x="8" y="1" width="1" height="1" fill="#5a3e20"/>
+          <rect x="4" y="1" width="4" height="1" fill="#888"/>
+          <rect x="3" y="2" width="1" height="1" fill="#5a3e20"/>
+          <rect x="8" y="2" width="1" height="1" fill="#5a3e20"/>
+          <rect x="4" y="2" width="4" height="1" fill="#999"/>
+          <rect x="3" y="3" width="1" height="1" fill="#5a3e20"/>
+          <rect x="8" y="3" width="1" height="1" fill="#5a3e20"/>
+          <rect x="4" y="3" width="4" height="1" fill="#aaa"/>
+          <rect x="3" y="4" width="1" height="1" fill="#5a3e20"/>
+          <rect x="8" y="4" width="1" height="1" fill="#5a3e20"/>
+          <rect x="4" y="4" width="4" height="1" fill="#999"/>
+          <rect x="3" y="5" width="1" height="1" fill="#5a3e20"/>
+          <rect x="8" y="5" width="1" height="1" fill="#5a3e20"/>
+          <rect x="4" y="5" width="4" height="1" fill="#888"/>
+          <rect x="4" y="6" width="4" height="1" fill="#5a3e20"/>
+          <!-- stand arc -->
+          <rect x="2" y="5" width="1" height="1" fill="#5a3e20"/>
+          <rect x="9" y="5" width="1" height="1" fill="#5a3e20"/>
+          <rect x="2" y="6" width="1" height="1" fill="#5a3e20"/>
+          <rect x="9" y="6" width="1" height="1" fill="#5a3e20"/>
+          <rect x="3" y="7" width="6" height="1" fill="#5a3e20"/>
+          <!-- pole -->
+          <rect x="5" y="8" width="2" height="1" fill="#5a3e20"/>
+          <rect x="5" y="9" width="2" height="1" fill="#5a3e20"/>
+          <rect x="5" y="10" width="2" height="1" fill="#5a3e20"/>
+          <!-- base -->
+          <rect x="3" y="11" width="6" height="1" fill="#5a3e20"/>
+          <rect x="3" y="12" width="6" height="1" fill="#3e2a14"/>
+          <!-- grid dots on mic -->
+          <rect x="5" y="2" width="1" height="1" fill="#777"/>
+          <rect x="5" y="4" width="1" height="1" fill="#777"/>
+          <rect x="6" y="3" width="1" height="1" fill="#777"/>
+        </svg>
+      </div>
 
-<button id="record-btn">Hold to<br>Record</button>
-<div id="timer"></div>
-<div id="status"></div>
+      <!-- Pixel equalizer -->
+      <div class="pixel-waves" id="pixel-waves">
+        <div class="pixel-wave-bar" style="height:4px"></div>
+        <div class="pixel-wave-bar" style="height:6px"></div>
+        <div class="pixel-wave-bar" style="height:10px"></div>
+        <div class="pixel-wave-bar" style="height:14px"></div>
+        <div class="pixel-wave-bar" style="height:20px"></div>
+        <div class="pixel-wave-bar" style="height:14px"></div>
+        <div class="pixel-wave-bar" style="height:10px"></div>
+        <div class="pixel-wave-bar" style="height:6px"></div>
+        <div class="pixel-wave-bar" style="height:4px"></div>
+      </div>
 
-<div id="result"></div>
+      <div class="record-label">TAP TO SPEAK INTO THE VOID</div>
+      <div class="record-area">
+        <button id="record-btn">
+          <span id="btn-text">START RECORDING</span>
+        </button>
+        <div class="progress-wrapper" id="progress-bar">
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill"></div>
+            <div class="progress-segs"><div></div><div></div><div></div><div></div><div></div></div>
+          </div>
+        </div>
+        <div class="timer-row"><div id="timer"></div></div>
+        <div id="status"></div>
+      </div>
+      <div id="result"></div>
+    </div>
+  </div>
+  <div class="panel-footer">YOU'LL GET YOUR VOICE VERDICT</div>
+  <div class="page-footer">F0 PITCH ANALYSIS VIA PRAAT ENGINE</div>
+</div>
+<div class="toast" id="toast"></div>
 
 <script>
-let mediaRecorder = null;
-let chunks = [];
-let startTime = 0;
-let timerInterval = null;
+let mediaRecorder=null,chunks=[],startTime=0,timerInterval=null,
+    audioContext=null,analyserNode=null,autoStopTimeout=null,
+    waveAnimFrame=null,lastResultData=null;
 
-const btn = document.getElementById('record-btn');
-const timerEl = document.getElementById('timer');
-const statusEl = document.getElementById('status');
-const resultEl = document.getElementById('result');
+const btn=document.getElementById('record-btn'),
+      btnText=document.getElementById('btn-text'),
+      timerEl=document.getElementById('timer'),
+      statusEl=document.getElementById('status'),
+      resultEl=document.getElementById('result'),
+      progressBar=document.getElementById('progress-bar'),
+      progressFill=document.getElementById('progress-fill'),
+      toast=document.getElementById('toast'),
+      waveBars=document.querySelectorAll('.pixel-wave-bar');
 
+// ===== PIXEL ART SVG STRINGS =====
+// Male character: dude with blue cap, stubble, blue shirt
+const MALE_SVG = `<svg width="72" height="84" viewBox="0 0 12 14" shape-rendering="crispEdges">
+  <!-- cap -->
+  <rect x="3" y="0" width="6" height="1" fill="#4a6a8a"/>
+  <rect x="2" y="1" width="8" height="1" fill="#6a9abe"/>
+  <rect x="1" y="2" width="10" height="1" fill="#4a6a8a"/>
+  <!-- hair sides -->
+  <rect x="2" y="3" width="1" height="1" fill="#5a3e20"/>
+  <rect x="9" y="3" width="1" height="1" fill="#5a3e20"/>
+  <!-- face -->
+  <rect x="3" y="3" width="6" height="1" fill="#d4a46a"/>
+  <rect x="2" y="4" width="1" height="1" fill="#d4a46a"/>
+  <rect x="9" y="4" width="1" height="1" fill="#d4a46a"/>
+  <rect x="3" y="4" width="6" height="1" fill="#d4a46a"/>
+  <!-- eyes -->
+  <rect x="4" y="4" width="1" height="1" fill="#3b2a1a"/>
+  <rect x="7" y="4" width="1" height="1" fill="#3b2a1a"/>
+  <!-- nose -->
+  <rect x="5" y="5" width="2" height="1" fill="#c09050"/>
+  <!-- mouth -->
+  <rect x="2" y="5" width="1" height="1" fill="#d4a46a"/>
+  <rect x="9" y="5" width="1" height="1" fill="#d4a46a"/>
+  <rect x="3" y="5" width="2" height="1" fill="#d4a46a"/>
+  <rect x="7" y="5" width="2" height="1" fill="#d4a46a"/>
+  <rect x="4" y="6" width="4" height="1" fill="#c09050"/>
+  <!-- stubble -->
+  <rect x="3" y="6" width="1" height="1" fill="#8a7050"/>
+  <rect x="8" y="6" width="1" height="1" fill="#8a7050"/>
+  <!-- shirt -->
+  <rect x="2" y="7" width="8" height="1" fill="#4a6a8a"/>
+  <rect x="1" y="8" width="10" height="1" fill="#6a9abe"/>
+  <rect x="1" y="9" width="10" height="1" fill="#4a6a8a"/>
+  <!-- arms -->
+  <rect x="0" y="8" width="1" height="2" fill="#d4a46a"/>
+  <rect x="11" y="8" width="1" height="2" fill="#d4a46a"/>
+  <!-- belt -->
+  <rect x="2" y="10" width="8" height="1" fill="#5a3e20"/>
+  <rect x="5" y="10" width="2" height="1" fill="#d4a020"/>
+  <!-- pants -->
+  <rect x="2" y="11" width="3" height="1" fill="#3a5470"/>
+  <rect x="7" y="11" width="3" height="1" fill="#3a5470"/>
+  <rect x="5" y="11" width="2" height="1" fill="#2a4060"/>
+  <!-- shoes -->
+  <rect x="2" y="12" width="3" height="1" fill="#3e2a14"/>
+  <rect x="7" y="12" width="3" height="1" fill="#3e2a14"/>
+  <rect x="1" y="12" width="1" height="1" fill="#3e2a14"/>
+  <rect x="10" y="12" width="1" height="1" fill="#3e2a14"/>
+</svg>`;
+
+// Female character: pink/red hair, dress, boots
+const FEMALE_SVG = `<svg width="72" height="84" viewBox="0 0 12 14" shape-rendering="crispEdges">
+  <!-- hair -->
+  <rect x="3" y="0" width="6" height="1" fill="#b05a6a"/>
+  <rect x="2" y="1" width="8" height="1" fill="#d07a8a"/>
+  <rect x="2" y="2" width="1" height="1" fill="#b05a6a"/>
+  <rect x="9" y="2" width="1" height="1" fill="#b05a6a"/>
+  <!-- hair falls -->
+  <rect x="1" y="3" width="1" height="3" fill="#b05a6a"/>
+  <rect x="10" y="3" width="1" height="3" fill="#b05a6a"/>
+  <!-- face -->
+  <rect x="3" y="2" width="6" height="1" fill="#d4a46a"/>
+  <rect x="2" y="3" width="8" height="1" fill="#d4a46a"/>
+  <!-- eyes -->
+  <rect x="4" y="3" width="1" height="1" fill="#3b2a1a"/>
+  <rect x="7" y="3" width="1" height="1" fill="#3b2a1a"/>
+  <!-- blush -->
+  <rect x="3" y="4" width="1" height="1" fill="#d09080"/>
+  <rect x="8" y="4" width="1" height="1" fill="#d09080"/>
+  <!-- nose & mouth -->
+  <rect x="2" y="4" width="1" height="1" fill="#d4a46a"/>
+  <rect x="9" y="4" width="1" height="1" fill="#d4a46a"/>
+  <rect x="4" y="4" width="4" height="1" fill="#d4a46a"/>
+  <rect x="5" y="5" width="2" height="1" fill="#e0a0a0"/>
+  <rect x="3" y="5" width="2" height="1" fill="#d4a46a"/>
+  <rect x="7" y="5" width="2" height="1" fill="#d4a46a"/>
+  <!-- dress top -->
+  <rect x="2" y="6" width="8" height="1" fill="#b05a6a"/>
+  <rect x="2" y="7" width="8" height="1" fill="#d07a8a"/>
+  <!-- arms -->
+  <rect x="0" y="7" width="2" height="1" fill="#d4a46a"/>
+  <rect x="10" y="7" width="2" height="1" fill="#d4a46a"/>
+  <!-- dress skirt -->
+  <rect x="1" y="8" width="10" height="1" fill="#b05a6a"/>
+  <rect x="1" y="9" width="10" height="1" fill="#d07a8a"/>
+  <rect x="0" y="10" width="12" height="1" fill="#b05a6a"/>
+  <rect x="1" y="11" width="10" height="1" fill="#8a3a4a"/>
+  <!-- dress pattern -->
+  <rect x="4" y="9" width="1" height="1" fill="#b05a6a"/>
+  <rect x="7" y="9" width="1" height="1" fill="#b05a6a"/>
+  <!-- boots -->
+  <rect x="2" y="12" width="3" height="1" fill="#3e2a14"/>
+  <rect x="7" y="12" width="3" height="1" fill="#3e2a14"/>
+</svg>`;
+
+const maleTitles = [
+  'BASS LORD', 'THE RUMBLER', 'BARITONE BANDIT',
+  'VOICE OF THUNDER', 'SIR GROWLS-A-LOT', 'THE SUBWOOFER',
+];
+const femaleTitles = [
+  'SOPRANO QUEEN', 'PITCH ROYALTY', 'TREBLE CHAMPION',
+  'THE SONGBIRD', 'CRYSTAL VOICE', 'THE HIGH ROLLER',
+];
+const maleQuips = [
+  '"Your voice could start a lawnmower"',
+  '"Subwoofers everywhere are jealous"',
+  '"You could narrate nature docs"',
+  '"Your vocal cords bench 200Hz"',
+  '"Batman voice: ACTIVATED"',
+  '"Somewhere, a tuba is blushing"',
+];
+const femaleQuips = [
+  '"Dolphins called, they wanna collab"',
+  '"Mariah Carey wants your secrets"',
+  '"Glass just shattered somewhere"',
+  '"Auto-tune just rage-quit"',
+  '"Your pitch broke the high score"',
+  '"Pixies are taking notes rn"',
+];
+const lowQuips = [
+  '"Your voice chose: CHAOS"',
+  '"The algorithm is sweating rn"',
+  '"Congrats, you broke science"',
+  '"Gender? Your voice said: NO"',
+];
+
+function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 function formatTime(ms) {
-  const s = Math.floor(ms / 1000);
-  const d = Math.floor((ms % 1000) / 100);
-  return `${s}.${d}s`;
+  return Math.floor(ms/1000) + '.' + Math.floor((ms%1000)/100) + 's';
+}
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+function getShareText(d) {
+  const g = d.gender === 'female' ? 'FEMALE' : 'MALE';
+  const p = d.gender === 'female' ? d.female_probability : d.male_probability;
+  return 'VOICE QUEST RESULT\n\nMy voice is ' + p + '% ' + g + '\nPitch: ' + d.f0_median + ' Hz\nConfidence: ' + d.confidence + '\n\nTry it yourself!';
+}
+
+function animateWaves() {
+  if (!analyserNode) return;
+  const data = new Uint8Array(analyserNode.frequencyBinCount);
+  analyserNode.getByteFrequencyData(data);
+  const step = Math.floor(data.length / waveBars.length);
+  waveBars.forEach((bar, i) => {
+    bar.style.height = Math.max(4, (data[i * step] / 255) * 28) + 'px';
+  });
+  waveAnimFrame = requestAnimationFrame(animateWaves);
+}
+function resetWaves() {
+  cancelAnimationFrame(waveAnimFrame);
+  [4,6,10,14,20,14,10,6,4].forEach((h,i) => { waveBars[i].style.height = h+'px'; });
 }
 
 async function startRecording() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    // Try wav first, fall back to webm
     const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-      ? 'audio/webm;codecs=opus'
-      : 'audio/webm';
+      ? 'audio/webm;codecs=opus' : 'audio/webm';
     mediaRecorder = new MediaRecorder(stream, { mimeType });
     chunks = [];
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioContext.createMediaStreamSource(stream);
+    analyserNode = audioContext.createAnalyser();
+    analyserNode.fftSize = 256;
+    source.connect(analyserNode);
 
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
-
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
     mediaRecorder.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
-      const blob = new Blob(chunks, { type: mimeType });
-      await analyzeAudio(blob);
+      resetWaves();
+      if (audioContext) { audioContext.close(); audioContext = null; analyserNode = null; }
+      await analyzeAudio(new Blob(chunks, { type: mimeType }));
     };
 
     mediaRecorder.start(100);
     startTime = Date.now();
     btn.classList.add('recording');
-    btn.textContent = 'Recording...';
+    btnText.textContent = 'LISTENING...';
     timerEl.classList.add('active');
+    progressBar.classList.add('active');
+    animateWaves();
 
     timerInterval = setInterval(() => {
-      timerEl.textContent = formatTime(Date.now() - startTime);
-    }, 100);
-
+      const elapsed = Date.now() - startTime;
+      timerEl.textContent = formatTime(elapsed);
+      progressFill.style.width = Math.min((elapsed / 3000) * 100, 100) + '%';
+    }, 50);
+    autoStopTimeout = setTimeout(() => stopRecording(), 3000);
   } catch (err) {
-    statusEl.textContent = 'Microphone access denied.';
+    statusEl.textContent = 'MIC ACCESS DENIED!';
   }
 }
 
 function stopRecording() {
   if (mediaRecorder && mediaRecorder.state === 'recording') {
+    clearTimeout(autoStopTimeout);
     clearInterval(timerInterval);
     mediaRecorder.stop();
     btn.classList.remove('recording');
-    btn.innerHTML = 'Hold to<br>Record';
+    btnText.textContent = 'START RECORDING';
     timerEl.classList.remove('active');
+    progressBar.classList.remove('active');
+    progressFill.style.width = '0%';
   }
 }
 
 async function analyzeAudio(blob) {
-  statusEl.textContent = 'Analyzing...';
+  statusEl.textContent = 'ANALYZING YOUR VIBE...';
+  statusEl.classList.add('analyzing');
   btn.disabled = true;
-
-  const formData = new FormData();
-  formData.append('audio', blob, 'recording.webm');
+  const fd = new FormData();
+  fd.append('audio', blob, 'recording.webm');
 
   try {
-    const res = await fetch('/analyze', { method: 'POST', body: formData });
-    const data = await res.json();
+    const res = await fetch('/analyze', { method: 'POST', body: fd });
+    const d = await res.json();
 
-    if (data.error) {
-      resultEl.innerHTML = `<div class="error-msg">${data.error}</div>`;
-    } else {
-      const genderColor = data.gender === 'female' ? '#ad1457' : '#1565c0';
+    if (d.error) {
       resultEl.innerHTML = `
-        <div class="result-card">
-          <div class="gender-label" style="color: ${genderColor}">
-            ${data.gender === 'female' ? 'Female' : 'Male'}
-          </div>
-          <div class="confidence">${data.confidence} confidence</div>
-          <div class="prob-bar">
-            <div class="prob-male" style="width: ${data.male_probability}%">
-              ${data.male_probability > 15 ? data.male_probability + '% M' : ''}
-            </div>
-            <div class="prob-female" style="width: ${data.female_probability}%">
-              ${data.female_probability > 15 ? data.female_probability + '% F' : ''}
-            </div>
-          </div>
-          <div class="stats">
-            <div class="stat">
-              <div class="stat-label">Median F0</div>
-              <div class="stat-value">${data.f0_median} Hz</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Mean F0</div>
-              <div class="stat-value">${data.f0_mean} Hz</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Range</div>
-              <div class="stat-value">${data.f0_min}–${data.f0_max} Hz</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Duration</div>
-              <div class="stat-value">${data.duration_seconds}s</div>
-            </div>
-          </div>
+        <div class="dot-divider" style="margin-top:16px">
+          <span></span><span></span><span></span><span></span><span></span>
         </div>
-      `;
+        <div class="error-box">
+          <div class="err-text">GAME OVER!<br>${d.error}</div>
+        </div>`;
+    } else {
+      lastResultData = d;
+      const isFemale = d.gender === 'female';
+      const isHigh = d.confidence === 'high';
+      const title = pick(isFemale ? femaleTitles : maleTitles);
+      const quip = isHigh ? pick(isFemale ? femaleQuips : maleQuips) : pick(lowQuips);
+      const cls = isFemale ? 'female' : 'male';
+      const label = isFemale ? 'FEMALE' : 'MALE';
+      const sprite = isFemale ? FEMALE_SVG : MALE_SVG;
+      const shareText = encodeURIComponent(getShareText(d));
+
+      resultEl.innerHTML = `
+        <div class="dot-divider" style="margin-top:16px">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="result-anim">
+          <div class="char-area">
+            <div class="char-sprite">${sprite}</div>
+            <div class="char-name ${cls}">${label}</div>
+            <div class="char-title">"${title}"</div>
+            <div class="char-quip">${quip}</div>
+          </div>
+          <div class="battle-section">
+            <div class="battle-heads">
+              <div class="battle-side">
+                <div class="battle-dot m"></div>
+                <span class="battle-tag m">MALE</span>
+              </div>
+              <div class="battle-side">
+                <span class="battle-tag f">FEMALE</span>
+                <div class="battle-dot f"></div>
+              </div>
+            </div>
+            <div class="battle-track">
+              <div class="battle-fill-m" style="width:${d.male_probability}%">
+                ${d.male_probability > 14 ? '<span class="battle-pct">'+d.male_probability+'%</span>' : ''}
+              </div>
+              <div class="battle-fill-f" style="width:${d.female_probability}%">
+                ${d.female_probability > 14 ? '<span class="battle-pct">'+d.female_probability+'%</span>' : ''}
+              </div>
+            </div>
+          </div>
+          <div class="stats-title">VOICE STATS</div>
+          <div class="stat-line">
+            <span class="stat-k">MEDIAN PITCH</span>
+            <span class="stat-v">${d.f0_median} Hz</span>
+          </div>
+          <div class="stat-line">
+            <span class="stat-k">MEAN PITCH</span>
+            <span class="stat-v">${d.f0_mean} Hz</span>
+          </div>
+          <div class="stat-line">
+            <span class="stat-k">RANGE</span>
+            <span class="stat-v">${d.f0_min} - ${d.f0_max} Hz</span>
+          </div>
+          <div class="stat-line">
+            <span class="stat-k">DURATION</span>
+            <span class="stat-v">${d.duration_seconds}s</span>
+          </div>
+          <div class="stat-line">
+            <span class="stat-k">CONFIDENCE</span>
+            <span class="stat-v ${isHigh ? 'high' : 'low'}">${d.confidence.toUpperCase()}</span>
+          </div>
+          <div class="share-area">
+            <div class="share-label">- SHARE YOUR SCORE -</div>
+            <div class="share-btns">
+              <button class="share-btn" onclick="copyResult()">COPY</button>
+              <a class="share-btn" href="https://twitter.com/intent/tweet?text=${shareText}" target="_blank" rel="noopener">TWEET</a>
+              <a class="share-btn" href="https://wa.me/?text=${shareText}" target="_blank" rel="noopener">WHATSAPP</a>
+            </div>
+          </div>
+        </div>`;
     }
     resultEl.style.display = 'block';
   } catch (err) {
-    resultEl.innerHTML = `<div class="error-msg">Analysis failed: ${err.message}</div>`;
+    resultEl.innerHTML = `<div class="error-box"><div class="err-text">CRITICAL HIT!<br>${err.message}</div></div>`;
     resultEl.style.display = 'block';
   }
-
   statusEl.textContent = '';
+  statusEl.classList.remove('analyzing');
   btn.disabled = false;
 }
 
-// Hold-to-record (mouse + touch)
-btn.addEventListener('mousedown', (e) => { e.preventDefault(); startRecording(); });
-btn.addEventListener('mouseup', stopRecording);
-btn.addEventListener('mouseleave', stopRecording);
-btn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
-btn.addEventListener('touchend', stopRecording);
-btn.addEventListener('touchcancel', stopRecording);
+function copyResult() {
+  if (!lastResultData) return;
+  navigator.clipboard.writeText(getShareText(lastResultData)).then(() => {
+    showToast('COPIED! GO FLEX ON YOUR FRIENDS');
+  }).catch(() => { showToast('COPY FAILED :('); });
+}
+
+btn.addEventListener('click', (e) => {
+  e.preventDefault();
+  if (mediaRecorder && mediaRecorder.state === 'recording') stopRecording();
+  else startRecording();
+});
 </script>
 </body>
 </html>
