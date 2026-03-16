@@ -42,7 +42,6 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     padding: 20px 16px;
     image-rendering: pixelated;
   }
@@ -60,6 +59,12 @@
     z-index: 1;
     width: 100%;
     max-width: 420px;
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+  body.has-results .game-container {
+    margin-top: 0;
+    margin-bottom: 0;
   }
 
   /* Main panel */
@@ -812,6 +817,7 @@ async function analyzeAudio(blob) {
         `;
     }
     resultEl.style.display = 'block';
+    document.body.classList.add('has-results');
   } catch (err) {
     resultEl.innerHTML = `<div class="error-box"><div class="err-text">CRITICAL HIT!<br>${err.message}</div></div>`;
     resultEl.style.display = 'block';
