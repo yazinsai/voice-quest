@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Gender Detection</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0a0a0a;
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  .subtitle {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 40px;
+  }
+  #record-btn {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 3px solid #333;
+    background: #1a1a1a;
+    color: #ccc;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #record-btn:hover { border-color: #555; background: #222; }
+  #record-btn.recording {
+    border-color: #e53935;
+    background: #2a1010;
+    color: #e53935;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.3); }
+    50% { box-shadow: 0 0 0 16px rgba(229,57,53,0); }
+  }
+  #record-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  #timer {
+    margin-top: 16px;
+    font-size: 1.1rem;
+    font-variant-numeric: tabular-nums;
+    color: #666;
+    height: 24px;
+  }
+  #timer.active { color: #e53935; }
+
+  #result {
+    margin-top: 40px;
+    width: 100%;
+    max-width: 360px;
+    display: none;
+  }
+  .result-card {
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .gender-label {
+    font-size: 1.6rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .confidence {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 20px;
+  }
+  .prob-bar {
+    display: flex;
+    height: 32px;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  .prob-male {
+    background: #1565c0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    transition: width 0.5s;
+  }
+  .prob-female {
+    background: #ad1457;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    transition: width 0.5s;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .stat {
+    background: #1a1a1a;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .stat-label {
+    font-size: 0.7rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stat-value {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .error-msg {
+    background: #2a1010;
+    border: 1px solid #3a1515;
+    border-radius: 8px;
+    padding: 16px;
+    color: #e57373;
+    text-align: center;
+    font-size: 0.9rem;
+  }
+  #status {
+    margin-top: 16px;
+    font-size: 0.8rem;
+    color: #666;
+    height: 20px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Voice Gender Detection</h1>
+<p class="subtitle">F0 pitch analysis via Praat</p>
+
+<button id="record-btn">Hold to<br>Record</button>
+<div id="timer"></div>
+<div id="status"></div>
+
+<div id="result"></div>
+
+<script>
+let mediaRecorder = null;
+let chunks = [];
+let startTime = 0;
+let timerInterval = null;
+
+const btn = document.getElementById('record-btn');
+const timerEl = document.getElementById('timer');
+const statusEl = document.getElementById('status');
+const resultEl = document.getElementById('result');
+
+function formatTime(ms) {
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor((ms % 1000) / 100);
+  return `${s}.${d}s`;
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Try wav first, fall back to webm
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : 'audio/webm';
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    chunks = [];
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(chunks, { type: mimeType });
+      await analyzeAudio(blob);
+    };
+
+    mediaRecorder.start(100);
+    startTime = Date.now();
+    btn.classList.add('recording');
+    btn.textContent = 'Recording...';
+    timerEl.classList.add('active');
+
+    timerInterval = setInterval(() => {
+      timerEl.textContent = formatTime(Date.now() - startTime);
+    }, 100);
+
+  } catch (err) {
+    statusEl.textContent = 'Microphone access denied.';
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    clearInterval(timerInterval);
+    mediaRecorder.stop();
+    btn.classList.remove('recording');
+    btn.innerHTML = 'Hold to<br>Record';
+    timerEl.classList.remove('active');
+  }
+}
+
+async function analyzeAudio(blob) {
+  statusEl.textContent = 'Analyzing...';
+  btn.disabled = true;
+
+  const formData = new FormData();
+  formData.append('audio', blob, 'recording.webm');
+
+  try {
+    const res = await fetch('/analyze', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (data.error) {
+      resultEl.innerHTML = `<div class="error-msg">${data.error}</div>`;
+    } else {
+      const genderColor = data.gender === 'female' ? '#ad1457' : '#1565c0';
+      resultEl.innerHTML = `
+        <div class="result-card">
+          <div class="gender-label" style="color: ${genderColor}">
+            ${data.gender === 'female' ? 'Female' : 'Male'}
+          </div>
+          <div class="confidence">${data.confidence} confidence</div>
+          <div class="prob-bar">
+            <div class="prob-male" style="width: ${data.male_probability}%">
+              ${data.male_probability > 15 ? data.male_probability + '% M' : ''}
+            </div>
+            <div class="prob-female" style="width: ${data.female_probability}%">
+              ${data.female_probability > 15 ? data.female_probability + '% F' : ''}
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-label">Median F0</div>
+              <div class="stat-value">${data.f0_median} Hz</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Mean F0</div>
+              <div class="stat-value">${data.f0_mean} Hz</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Range</div>
+              <div class="stat-value">${data.f0_min}–${data.f0_max} Hz</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Duration</div>
+              <div class="stat-value">${data.duration_seconds}s</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    resultEl.style.display = 'block';
+  } catch (err) {
+    resultEl.innerHTML = `<div class="error-msg">Analysis failed: ${err.message}</div>`;
+    resultEl.style.display = 'block';
+  }
+
+  statusEl.textContent = '';
+  btn.disabled = false;
+}
+
+// Hold-to-record (mouse + touch)
+btn.addEventListener('mousedown', (e) => { e.preventDefault(); startRecording(); });
+btn.addEventListener('mouseup', stopRecording);
+btn.addEventListener('mouseleave', stopRecording);
+btn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
+btn.addEventListener('touchend', stopRecording);
+btn.addEventListener('touchcancel', stopRecording);
+</script>
+</body>
+</html>
