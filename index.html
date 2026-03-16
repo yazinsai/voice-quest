@@ -224,7 +224,16 @@
   }
 
   /* ===== RESULTS ===== */
-  #result { width: 100%; display: none; margin-top: 14px; }
+  #result { width: 100%; display: none; margin-top: 12px; }
+  #result .result-panel-wrap {
+    background: var(--panel);
+    border: 4px solid var(--border);
+    box-shadow:
+      inset 0 0 0 2px var(--panel-light),
+      0 6px 0 var(--border-dark),
+      0 8px 20px rgba(0,0,0,0.5);
+    padding: 20px;
+  }
   @keyframes drop-in {
     0% { opacity: 0; transform: translateY(-20px); }
     60% { transform: translateY(4px); }
@@ -481,9 +490,9 @@
         <div class="timer-row"><div id="timer"></div></div>
         <div id="status"></div>
       </div>
-      <div id="result"></div>
     </div>
   </div>
+  <div id="result"></div>
   <div class="panel-footer">YOU'LL GET YOUR VOICE VERDICT</div>
   <div class="page-footer">F0 PITCH ANALYSIS VIA PRAAT ENGINE</div>
 </div>
@@ -726,11 +735,10 @@ async function analyzeAudio(blob) {
 
     if (d.error) {
       resultEl.innerHTML = `
-        <div class="dot-divider" style="margin-top:16px">
-          <span></span><span></span><span></span><span></span><span></span>
-        </div>
-        <div class="error-box">
-          <div class="err-text">GAME OVER!<br>${d.error}</div>
+        <div class="result-panel-wrap">
+          <div class="error-box">
+            <div class="err-text">GAME OVER!<br>${d.error}</div>
+          </div>
         </div>`;
     } else {
       lastResultData = d;
@@ -744,10 +752,7 @@ async function analyzeAudio(blob) {
       const shareText = encodeURIComponent(getShareText(d));
 
       resultEl.innerHTML = `
-        <div class="dot-divider" style="margin-top:16px">
-          <span></span><span></span><span></span><span></span><span></span>
-        </div>
-        <div class="result-anim">
+        <div class="result-panel-wrap result-anim">
           <div class="char-area">
             <div class="char-sprite">${sprite}</div>
             <div class="char-name ${cls}">${label}</div>
@@ -803,7 +808,8 @@ async function analyzeAudio(blob) {
               <a class="share-btn" href="https://wa.me/?text=${shareText}" target="_blank" rel="noopener">WHATSAPP</a>
             </div>
           </div>
-        </div>`;
+        </div>
+        `;
     }
     resultEl.style.display = 'block';
   } catch (err) {
