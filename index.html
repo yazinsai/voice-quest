@@ -66,6 +66,12 @@
     margin-top: 0;
     margin-bottom: 0;
   }
+  body.has-results .main-panel {
+    display: none;
+  }
+  body.has-results .panel-footer {
+    display: none;
+  }
 
   /* Main panel */
   .main-panel {
@@ -656,7 +662,7 @@ function showToast(msg) {
 function getShareText(d) {
   const g = d.gender === 'female' ? 'FEMALE' : 'MALE';
   const p = d.gender === 'female' ? d.female_probability : d.male_probability;
-  return 'VOICE QUEST RESULT\n\nMy voice is ' + p + '% ' + g + '\nPitch: ' + d.f0_median + ' Hz\nConfidence: ' + d.confidence + '\n\nTry it yourself!';
+  return 'VOICE QUEST RESULT\n\nMy voice is ' + p + '% ' + g + '\nPitch: ' + d.f0_median + ' Hz\nConfidence: ' + d.confidence + '\n\nTry it yourself: voice-quest.whhite.com';
 }
 
 function animateWaves() {
@@ -813,6 +819,9 @@ async function analyzeAudio(blob) {
               <a class="share-btn" href="https://wa.me/?text=${shareText}" target="_blank" rel="noopener">WHATSAPP</a>
             </div>
           </div>
+          <div style="text-align:center;margin-top:14px;">
+            <button class="share-btn" onclick="tryAgain()" style="background:var(--gold);border-color:var(--gold-dark);">TRY AGAIN</button>
+          </div>
         </div>
         `;
     }
@@ -825,6 +834,12 @@ async function analyzeAudio(blob) {
   statusEl.textContent = '';
   statusEl.classList.remove('analyzing');
   btn.disabled = false;
+}
+
+function tryAgain() {
+  resultEl.style.display = 'none';
+  document.body.classList.remove('has-results');
+  window.scrollTo(0, 0);
 }
 
 function copyResult() {
